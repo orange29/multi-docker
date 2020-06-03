@@ -1,0 +1,32 @@
+sudo: required
+services:
+    - docker
+
+before_install:
+    # Look into the client directory to get the build context
+    - docker build -t orange29/react-test -f ./client/Dockerfile.dev ./client
+
+    # Primary test running section.  If any script exit with status
+    # other than 0, Travis will consider this build a fail.
+script:
+    # By specifying npm test, we enter watch mode.  To ensure the test exits
+    # we add -- -- coverage
+    - docker run orange29/react-test npm test -- -- coverage
+
+after_success:
+    # Docker build imgages for client, server, and worker directoreis
+    - docker build -t orange29/multi-client ./client
+    - docker build -t orange29/multi-nginx ./nginx
+    - docker build -t orange29/multi-server ./server
+    - docker build -t orange29/multi-worker ./worker
+    # Log in to the docker CLI
+    # Do entire loging step in one single command.  $DOCKER_PASSWORD becomes input
+    # to the docker login command.  We end by telling docker to expect the password
+    # in --password-stdin  
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+    # Take those images and push them to docker hub
+    - docker push orange29/multi-client
+    - docker push orange29/multi-nginx
+    - docker push orange29/multi-server
+    - docker push orange29/multi-worker
+
