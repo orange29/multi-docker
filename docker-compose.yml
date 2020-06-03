@@ -1,0 +1,60 @@
+version: '3'
+services: 
+    postgres:
+        image: 'postgres:latest'
+        environment:
+            - POSTGRES_PASSWORD=postgres_password 
+    redis:
+        image: 'redis:latest'
+    # Could have called nginx the proxy or the router.  Anything really.
+    nginx:
+        restart: always
+        build:
+            dockerfile: Dockerfile.dev
+            context: ./nginx
+        ports:
+            - '3050:80'
+    api:
+        build:
+            dockerfile: Dockerfile.dev
+            # context will be the server directory containing all
+            # the files to build with plus the Dockerfile to use.
+            context: ./server
+        volumes:
+            # Don't override the following
+            - /app/node_modules
+            # Following ensures we don't have to rebuild our image
+            # any time we make a little change to our source code
+            - ./server:/app
+        environment: 
+            # Taken from above.  redis is the name of the service
+            - REDIS_HOST=redis
+            # Find port on docker hub
+            - REDIS_PORT=6379
+            - PGUSER=postgres
+            - PGHOST=postgres
+            - PGDATABASE=postgres
+            - PGPASSWORD=postgres_password
+            - PGPORT=5432
+    client:
+        stdin_open: true
+        build:
+            dockerfile: Dockerfile.dev
+            context: ./client
+        volumes: 
+            - /app/node_modules
+            # Everything within the client directory should be shared with
+            # the app directory inside the container
+            - ./client:/app
+    worker:
+        environment: 
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+        # No restart policy for the work.  Very expensive computation.  
+        # If it misbehaves, let it die.
+        build: 
+            dockerfile: Dockerfile.dev
+            context: ./worker
+        volumes:
+            - /app/node_modules
+            - ./worker:/app

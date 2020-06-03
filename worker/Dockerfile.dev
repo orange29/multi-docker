@@ -1,0 +1,8 @@
+FROM node:alpine
+WORKDIR '/app'
+COPY ./package.json ./
+RUN npm install
+COPY . .
+# nodemon automatically reload entire project whenever
+# any of the source code changes
+CMD ["npm", "run", "dev"]
