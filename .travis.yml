@@ -10,8 +10,8 @@ before_install:
     # other than 0, Travis will consider this build a fail.
 script:
     # By specifying npm test, we enter watch mode.  To ensure the test exits
-    # we add -- -- coverage
-    - docker run orange29/react-test npm test -- -- coverage
+    # we add the CI=true switch to force Jest to run in CI-mode
+    - docker run -e CI=true orange29/react-test npm test
 
 after_success:
     # Docker build imgages for client, server, and worker directoreis
